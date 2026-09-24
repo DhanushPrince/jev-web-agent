@@ -1,53 +1,36 @@
 #!/usr/bin/env bash
 #
-# start.sh — install dependencies, then run the Jev inspector on localhost.
+# run.sh — run the Jev inspector on localhost (no dependency install).
 #
+# Assumes dependencies are already installed (run ./start.sh once, or `uv sync`).
 # What it does:
-#   1. Installs dependencies with `uv sync` (skip via --no-install).
-#   2. Kills whatever is bound to the demo port (default 8766) + stray demo processes.
-#   3. Ensures browser-harness has a live Chrome tab (clears stale targets).
-#   4. Starts the inspector server and waits until it responds.
+#   1. Kills whatever is bound to the demo port (default 8766) + stray demo processes.
+#   2. Ensures browser-harness has a live Chrome tab (clears stale targets).
+#   3. Starts the inspector server and waits until it responds.
 #
 # Usage:
-#   ./start.sh                # install deps, then run (foreground; Ctrl-C to stop)
-#   ./start.sh --background   # install deps, then run detached (logs to /tmp/jev_run.log)
-#   ./start.sh --no-install   # skip `uv sync` (faster restart)
-#   PORT=9000 ./start.sh      # use a different port
+#   ./run.sh                # foreground (Ctrl-C to stop)
+#   ./run.sh --background   # run detached, logs to /tmp/jev_run.log
+#   PORT=9000 ./run.sh      # use a different port
 
 set -euo pipefail
 
-# Resolve repo root (directory of this script) so it works from anywhere.
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
 PORT="${PORT:-8766}"
 LOG="${LOG:-/tmp/jev_run.log}"
 BACKGROUND=0
-INSTALL=1
-for arg in "$@"; do
-  case "$arg" in
-    --background|-b) BACKGROUND=1 ;;
-    --no-install)    INSTALL=0 ;;
-  esac
-done
+[[ "${1:-}" == "--background" || "${1:-}" == "-b" ]] && BACKGROUND=1
 
-echo "==> Jev inspector startup (port ${PORT})"
+echo "==> Jev inspector (port ${PORT})"
 
-# 0. Require uv.
 if ! command -v uv >/dev/null 2>&1; then
   echo "!!  'uv' is not installed. Install it: https://docs.astral.sh/uv/getting-started/installation/"
   exit 1
 fi
 
-# 1. Install dependencies.
-if [[ "$INSTALL" -eq 1 ]]; then
-  echo "--> Installing dependencies (uv sync)..."
-  uv sync
-else
-  echo "--> Skipping dependency install (--no-install)."
-fi
-
-# 2. Kill anything on the port and any stray demo processes.
+# 1. Kill anything on the port and any stray demo processes.
 echo "--> Stopping any existing server..."
 if PIDS="$(lsof -ti "tcp:${PORT}" 2>/dev/null)"; then
   [[ -n "$PIDS" ]] && echo "    killing pids on :${PORT}: $PIDS" && kill -9 $PIDS 2>/dev/null || true
@@ -55,20 +38,18 @@ fi
 pkill -f "jev_ultrafast.demo" 2>/dev/null || true
 sleep 2
 
-# 3. Ensure a live browser tab so the harness has a fresh target to attach to.
+# 2. Ensure a live browser tab so the harness has a fresh target to attach to.
 echo "--> Ensuring a live browser tab..."
 uv run browser-harness <<'PY' 2>/dev/null || echo "    (warning: could not ensure a tab; open Chrome and allow remote debugging)"
 ensure_real_tab()
 print("    tab ready")
 PY
 
-# 4. Start the server.
+# 3. Start the server.
 if [[ "$BACKGROUND" -eq 1 ]]; then
   echo "--> Starting server in background (logs: ${LOG})..."
   TYPESAFE_DEMO_PORT="$PORT" nohup uv run jev > "$LOG" 2>&1 &
-  SERVER_PID=$!
-  echo "    pid ${SERVER_PID}"
-  # Wait for the server to respond.
+  echo "    pid $!"
   for i in $(seq 1 20); do
     if curl -s -o /dev/null "http://127.0.0.1:${PORT}/"; then
       echo "==> Ready: http://127.0.0.1:${PORT}/"
