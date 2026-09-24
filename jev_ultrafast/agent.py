@@ -1,6 +1,7 @@
 """The complete agent loop. Typed choices, observable state, bounded execution."""
 
 import base64
+import secrets
 import time
 from pathlib import Path
 
@@ -35,6 +36,8 @@ class Agent:
             plan_index=0,
             decisions=[],
             text_calls=[],
+            traces=[],
+            session_id=time.strftime("%Y%m%d-%H%M%S") + "-" + secrets.token_hex(3),
             elapsed_ms=0,
             started_at=None,
             record=bool(self.record_dir),
@@ -97,6 +100,34 @@ class Agent:
                 state["status"] = "done" if selected == "DONE" else "blocked"
                 state["plan_index"] = int(selected == "DONE")
                 state["elapsed_ms"] = round((time.perf_counter() - state["started_at"]) * 1000)
+                state["traces"].append(
+                    {
+                        "step": len(state["history"]) + 1,
+                        "jev_input": decision.get("request"),
+                        "jev_response": {
+                            "model": decision.get("model"),
+                            "operation": decision["operation"],
+                            "target": decision["target"],
+                            "choice": decision["choice"],
+                            "operation_probabilities": decision["operation_probabilities"],
+                            "target_probabilities": decision.get("target_probabilities", {}),
+                            "confidence": decision["confidence"],
+                            "target_confidence": decision.get("target_confidence"),
+                            "latency_ms": decision["latency_ms"],
+                            "usage": decision.get("usage", {}),
+                            "raw_answers": decision.get("raw_answers"),
+                        },
+                        "mercury": None,
+                        "executed": {
+                            "kind": selected.lower(),
+                            "target_label": None,
+                            "url_before": page["url"],
+                            "url_after": page["url"],
+                            "page_changed": False,
+                            "elapsed_ms": state["elapsed_ms"],
+                        },
+                    }
+                )
                 return self.snapshot()
             action = next(a for a in page["actions"] if a["id"] == selected)
             if len(state["history"]) >= MAX_STEPS:
@@ -126,6 +157,8 @@ class Agent:
                     "choice": selected,
                     "probability": decision["probabilities"][selected],
                     "confidence": decision["confidence"],
+                    "operation_probabilities": decision["operation_probabilities"],
+                    "target_confidence": decision["target_confidence"],
                     "latency_ms": decision["latency_ms"],
                     "text": text,
                     "text_helper": helper["model"] if helper else None,
@@ -145,6 +178,48 @@ class Agent:
                 page_changed=state["page"]["fingerprint"] != page["fingerprint"],
                 url=state["page"]["url"],
                 elapsed_ms=state["elapsed_ms"],
+            )
+            executed = state["history"][-1]
+            state["traces"].append(
+                {
+                    "step": executed["step"],
+                    # Exact input sent to Jev for this decision.
+                    "jev_input": decision.get("request"),
+                    # Exact response from Jev.
+                    "jev_response": {
+                        "model": decision.get("model"),
+                        "operation": decision["operation"],
+                        "target": decision["target"],
+                        "choice": decision["choice"],
+                        "operation_probabilities": decision["operation_probabilities"],
+                        "target_probabilities": decision.get("target_probabilities", {}),
+                        "confidence": decision["confidence"],
+                        "target_confidence": decision.get("target_confidence"),
+                        "latency_ms": decision["latency_ms"],
+                        "usage": decision.get("usage", {}),
+                        "raw_answers": decision.get("raw_answers"),
+                    },
+                    # What the Mercury text model produced (only for TYPE_TEXT).
+                    "mercury": (
+                        {
+                            "model": helper["model"],
+                            "text": text,
+                            "latency_ms": helper["latency_ms"],
+                            "usage": helper.get("usage", {}),
+                        }
+                        if helper
+                        else None
+                    ),
+                    # What was actually executed on the page.
+                    "executed": {
+                        "kind": executed["kind"],
+                        "target_label": executed["action"],
+                        "url_before": page["url"],
+                        "url_after": executed["url"],
+                        "page_changed": executed["page_changed"],
+                        "elapsed_ms": executed["elapsed_ms"],
+                    },
+                }
             )
             if state["record"]:
                 (self.record_dir / f"{state['elapsed_ms']:06d}.jpg").write_bytes(

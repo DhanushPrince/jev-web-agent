@@ -132,6 +132,236 @@ form {
   align-items: center;
   gap: 16px;
 }
+.task-row[hidden] {
+  display: none;
+}
+#start-url {
+  flex: 1;
+  padding: 12px 14px;
+  border-radius: 10px;
+}
+.io-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+  margin-top: 10px;
+}
+.io-block {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.02);
+}
+.io-block h4 {
+  margin: 0 0 2px;
+  font-size: 13px;
+}
+.io-block h4 span {
+  font-weight: 400;
+  color: #6b6b6b;
+  font-size: 12px;
+}
+.io-note {
+  margin: 0 0 8px;
+  font-size: 11px;
+  color: #6b6b6b;
+}
+#io-input {
+  max-height: 260px;
+  overflow: auto;
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.io-line,
+.io-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12px;
+  padding: 3px 0;
+}
+.io-line > span,
+.io-row > span {
+  flex: 0 0 auto;
+}
+.io-line > b,
+.io-row > b {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.io-line span,
+.io-row span {
+  color: #6b6b6b;
+}
+.io-row.best b {
+  color: #1a7f37;
+}
+.io-subhead {
+  margin-top: 8px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b6b6b;
+}
+.io-mercury {
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding-top: 6px;
+  margin-top: 6px;
+}
+.io-mercury:first-child {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+.trace-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.trace-table th,
+.trace-table td {
+  text-align: left;
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  vertical-align: top;
+}
+.trace-table th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b6b6b;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+}
+.trace-table tbody tr:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+.trace-table .cell-target {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.op-dist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.op-chip {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.06);
+  color: #6b6b6b;
+}
+.op-chip.best {
+  background: rgba(26, 127, 55, 0.15);
+  color: #1a7f37;
+  font-weight: 600;
+}
+.io-page-meta {
+  margin-bottom: 6px;
+}
+.io-step {
+  color: #1a7f37;
+  font-weight: 600;
+}
+.head {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  margin: 6px 0;
+  background: rgba(0, 0, 0, 0.02);
+}
+.head > summary {
+  cursor: pointer;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+}
+.head > summary::-webkit-details-marker {
+  display: none;
+}
+.head .pill {
+  font-size: 10px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.06);
+  color: #6b6b6b;
+}
+.head-body {
+  padding: 4px 10px 10px;
+}
+.head-opt {
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 6px 0;
+}
+.head-opt-name {
+  font-weight: 600;
+  font-size: 12px;
+}
+.head-opt-when {
+  font-size: 11px;
+  color: #6b6b6b;
+  word-break: break-word;
+}
+.head-q {
+  font-size: 11px;
+  margin: 4px 0;
+  word-break: break-word;
+}
+.head-q span {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b6b6b;
+  font-size: 10px;
+  margin-right: 4px;
+}
+.io-statetext {
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #6b6b6b;
+  max-height: 180px;
+  overflow: auto;
+}
+.io-table-wrap {
+  max-height: 260px;
+  overflow: auto;
+  margin-bottom: 8px;
+}
+.input-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.input-table th,
+.input-table td {
+  text-align: left;
+  padding: 4px 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  vertical-align: top;
+}
+.input-table th {
+  position: sticky;
+  top: 0;
+  background: #f4f4f2;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b6b6b;
+}
+.input-table .cell-target {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 input,
 select,
 button {

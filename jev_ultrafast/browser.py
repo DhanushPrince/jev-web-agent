@@ -26,11 +26,22 @@ class Browser:
         # Keep rAF/menus rendering in an owned background tab, without activating the user's Chrome tab.
         self.call("Emulation.setFocusEmulationEnabled", enabled=True)
         self.call("Page.navigate", url=url)
+        # Wait for the document to load, then for a single-page app to actually render
+        # interactive controls before the first snapshot. Generic: any slow SPA benefits.
+        interactive = (
+            "!!document.querySelector('a[href],button,input,textarea,select,summary,"
+            "[contenteditable=\"true\"],[role=\"button\"],[role=\"link\"],[role=\"textbox\"],"
+            "[role=\"combobox\"],[role=\"checkbox\"],[role=\"menuitem\"],[role=\"tab\"],"
+            "[role=\"gridcell\"],[role=\"option\"]')"
+        )
         deadline = time.monotonic() + 15
+        loaded = False
         while time.monotonic() < deadline:
-            if self.evaluate("document.readyState") == "complete":
+            if not loaded and self.evaluate("document.readyState") == "complete":
+                loaded = True
+            if loaded and self.evaluate(interactive):
                 break
-            time.sleep(0.02)
+            time.sleep(0.05)
 
     def call(self, method, **params):
         return cdp(method, session_id=self.session, **params)
@@ -149,6 +160,14 @@ def browser_operation(request):
               const r=e.getBoundingClientRect(), x=r.x+r.width/2, y=r.y+r.height/2;
               if (!r.width || !r.height || x<0 || y<0 || x>=innerWidth || y>=innerHeight) return null;
               if (!e.contains(document.elementFromPoint(x,y))) return null;
+              // Keep navigation in this owned tab: a target="_blank" link would open a new
+              // tab the agent cannot follow. Redirect the clicked anchor to the same tab.
+              if (action.kind==='click') {
+                const anchor = e.closest('a[target]') || (e.tagName==='A' ? e : null);
+                if (anchor && anchor.getAttribute('target') && anchor.getAttribute('target')!=='_self') {
+                  anchor.setAttribute('target','_self');
+                }
+              }
               if (action.kind==='select') {
                 if (e.tagName!=='SELECT' || ![...e.options].some(o=>o.value===action.value &&
                     !o.disabled && !o.closest('optgroup[disabled]'))) return null;

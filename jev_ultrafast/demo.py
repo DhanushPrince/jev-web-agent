@@ -29,9 +29,50 @@ def load_environment():
                 os.environ.setdefault(key, value)
 
 
+def load_config():
+    """Read config.json (url + goal) from the current working directory, if present."""
+    path = Path.cwd() / "config.json"
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text())
+    except (ValueError, OSError):
+        return {}
+    goal = data.get("goal")
+    if isinstance(goal, list):
+        goal = goal[0] if goal else ""
+    return {"url": (data.get("url") or "").strip(), "goal": (goal or "").strip()}
+
+
 def response_state():
     state = AGENT.snapshot() if AGENT else {"page": None, "status": "idle", "history": [], "decision": None}
-    return {**state, "text_model": os.environ.get("TEXT_MODEL", "deepseek-chat"), "max_steps": MAX_STEPS}
+    config = load_config()
+    return {
+        **state,
+        "text_model": os.environ.get("TEXT_MODEL", "deepseek-chat"),
+        "max_steps": MAX_STEPS,
+        "config_url": config.get("url", ""),
+        "config_goal": config.get("goal", ""),
+    }
+
+
+def write_trace():
+    """Assemble the current run's trace and write it to output/<session_id>.json."""
+    session_id = AGENT.state.get("session_id")
+    trace = {
+        "session_id": session_id,
+        "goal": AGENT.state["goal"],
+        "url": AGENT.state["page"]["url"] if AGENT.state.get("page") else None,
+        "scenario": AGENT.state.get("scenario"),
+        "status": AGENT.state["status"],
+        "elapsed_ms": AGENT.state["elapsed_ms"],
+        "steps": AGENT.state.get("traces", []),
+    }
+    out_dir = Path.cwd() / "output"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out = out_dir / f"{session_id}.json"
+    out.write_text(json.dumps(trace, indent=2))
+    return {"written": str(out), "session_id": session_id, "steps": len(trace["steps"])}
 
 
 def close_browser():
@@ -45,25 +86,43 @@ def command(name, body):
     global AGENT
     if name == "reset":
         scenario = body.get("scenario", "flights")
-        if scenario not in {"travel", "research", "flights"}:
+        if scenario not in {"travel", "research", "flights", "config"}:
             raise ValueError("Unknown demo scenario")
         goal = body.get("goal", "").strip()
         if not goal or len(goal) > 2000:
             raise ValueError("Enter 1–2,000 characters")
+        if scenario == "config":
+            url = (body.get("url") or "").strip() or load_config().get("url", "")
+            if not url:
+                raise ValueError("Enter a start URL")
+            if urlparse(url).scheme not in {"http", "https"}:
+                raise ValueError("URL must start with http:// or https://")
+        elif scenario == "flights":
+            url = "https://www.google.com/travel/flights?hl=en"
+        else:
+            url = f"{ORIGIN}/fixture.html?scenario={scenario}"
         close_browser()
         AGENT = Agent(
-            "https://www.google.com/travel/flights?hl=en"
-            if scenario == "flights"
-            else f"{ORIGIN}/fixture.html?scenario={scenario}",
+            url,
             goal,
             screenshots=True,
             record_dir=Path.cwd() / "artifacts" / "frames" if body.get("record") else None,
         )
         AGENT.state["scenario"] = scenario
+    elif name == "trace":
+        if AGENT is None:
+            raise ValueError("Start a demo first")
+        return write_trace()
     else:
         if AGENT is None:
             raise ValueError("Start a demo first")
         AGENT.command(name, body)
+        # Auto-save the trace once the run finishes.
+        if AGENT.state.get("status") in {"done", "blocked"}:
+            try:
+                write_trace()
+            except OSError:
+                pass
     return response_state()
 
 

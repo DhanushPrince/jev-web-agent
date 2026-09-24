@@ -34,7 +34,21 @@
             <option value="flights">Google Flights · real web</option>
             <option value="travel">Travel planner · fixture</option>
             <option value="research">Reading room · fixture</option>
+            <option value="google-blog">Google → first blog · real web</option>
+            <option value="amazon-nb413">Amazon → New Balance 413 · real web</option>
+            <option value="config">Custom URL · your own</option>
           </select>
+        </div>
+        <div class="task-row" id="url-row" hidden>
+          <input
+            id="start-url"
+            name="url"
+            type="url"
+            inputmode="url"
+            autocomplete="off"
+            placeholder="https://example.com — the page to start on"
+            aria-label="Start URL"
+          />
         </div>
         <div class="task-row">
           <textarea id="goal" name="goal" rows="5">
@@ -123,14 +137,64 @@ Find one-way flights from Zurich to London on September 20, 2026, for one adult 
       <section class="trace">
         <div class="trace-heading">
           <h2>Decision trail <span id="step-count">0 actions</span></h2>
+          <button type="button" id="save-traces">Save traces.json ↓</button>
           <button type="button" id="download" disabled>Export trace ↓</button>
         </div>
         <div id="history">
           <p class="muted">Each executed action leaves an observed result.</p>
         </div>
+        <table id="history-table" class="trace-table" hidden>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Operation</th>
+              <th>Target</th>
+              <th>Confidence</th>
+              <th>Jev ms</th>
+              <th>Mercury text</th>
+              <th>Mercury ms</th>
+              <th>Result</th>
+            </tr>
+          </thead>
+          <tbody id="history-body"></tbody>
+        </table>
       </section>
+      <details id="io-panel" open>
+        <summary>Jev &amp; Mercury I/O · what's happening <span id="io-step" class="io-step"></span></summary>
+        <div class="io-grid">
+          <div class="io-block">
+            <h4>1 · Input to Jev</h4>
+            <p class="io-note">Page + elements + questions sent in one request.</p>
+            <div id="io-input-page" class="io-page-meta"></div>
+            <div id="io-input-heads"></div>
+            <div class="io-subhead">Elements passed to Jev <span id="io-input-count"></span></div>
+            <div class="io-table-wrap">
+              <table id="io-input-elements" class="input-table" hidden>
+                <thead>
+                  <tr><th>#</th><th>Role</th><th>Label</th><th>Operations</th><th>Value</th></tr>
+                </thead>
+                <tbody id="io-input-elements-body"></tbody>
+              </table>
+            </div>
+            <details>
+              <summary>Raw input JSON</summary>
+              <pre id="io-input">Run a task to see the input.</pre>
+            </details>
+          </div>
+          <div class="io-block">
+            <h4>2 · Jev output <span id="io-jev-latency"></span></h4>
+            <p class="io-note">Operation and target chosen from the observed set.</p>
+            <div id="io-jev-output"><span class="muted">No decision yet.</span></div>
+          </div>
+          <div class="io-block">
+            <h4>3 · Mercury output</h4>
+            <p class="io-note">Text is generated only for TYPE_TEXT.</p>
+            <div id="io-mercury-output"><span class="muted">No text generated yet.</span></div>
+          </div>
+        </div>
+      </details>
       <details>
-        <summary>What the model sees</summary>
+        <summary>What the model sees (raw JSON)</summary>
         <pre id="model-state">
 Start a demo to inspect its structured state.</pre>
       </details>

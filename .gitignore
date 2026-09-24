@@ -8,3 +8,10 @@ artifacts/
 *.egg-info/
 
 dist/
+
+# Session artifacts and trace outputs (may contain real logged-in account data)
+.playwright-mcp/
+output/
+output.json
+test/
+*.png

@@ -1,0 +1,6 @@
+{
+  "url": "https://www.youtube.com/results?search_query=what+is+jev",
+  "goal": [
+    "Open the first video result and stop. The goal is complete as soon as that video's watch page is open. Do not open, click, or navigate to any other video, suggestion, or link after the first video's watch page is showing."
+  ]
+}
